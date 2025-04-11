@@ -94,6 +94,7 @@ class PipelineParams(ParamGroup):
         self.DifferentImagesResetOpacity = False
         self.UseTrueDepthMap = False
         self.OnlyTrainNewScene = False
+        self.ProgressiveModelOutput = False
         super().__init__(parser, "Pipeline Parameters")
 
 class OptimizationParams(ParamGroup):
