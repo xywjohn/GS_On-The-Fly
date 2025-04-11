@@ -71,7 +71,19 @@ git clone https://github.com/xywjohn/GS_On-The-Fly --recursive
 
 After that, please manually decompress the diff-gaussian-rasterization.zip archive located under the submodules directory.
 
+## Setup
 
+```shell
+conda env create --file environment.yml
+conda activate On_The_Fly_GS
+cd .../GS_On-The-Fly
+```
+
+## 3DGS Train
+
+```shell
+python ContinuosProgressiveTrain.py --Source_Path_Dir .../On-The-Fly/data1 --Model_Path_Dir .../OutputDir --FinalOptimizationIterations 4000
+```
 
 ## BibTeX
 ```
