@@ -13,45 +13,41 @@ Since this project aims to enable simultaneous image acquisition and 3D Gaussian
 
 You can use your own data or the test data provided by us (located in /demo_data/images) to perform processing with the On-The-Fly SfM system. This will produce results as illustrated below:
 
-│  
-├─16
-│  ├─images
-│  │      1DJI_0024.JPG
-│  │      1DJI_0025.JPG
-│  │      ......
-│  │      
-│  └─sparse
-│      └─0
-│              cameras.bin
-│              imageMatchMatrix.txt
-│              images.bin
-│              imagesNames.txt
-│              points3D.bin
-│              points3D.ply
-│              
-├─17
-│  ├─images
-│  │      1DJI_0023.JPG
-│  │      1DJI_0024.JPG
-│  │      ......
-│  │      
-│  └─sparse
-│      └─0
-│              cameras.bin
-│              imageMatchMatrix.txt
-│              images.bin
-│              imagesNames.txt
-│              points3D.bin
-│              points3D.ply
-│              
-├─18
-│  ......
-├─19
-│  ......
-├─20
-│  ......
-├─21
-│  ......
+Dataset 
+=>16
+||===>images
+||    ||===>1DJI_0024.JPG
+||    ||===>1DJI_0025.JPG
+||    ||===>......   
+||===>sparse
+||    ||===>0
+||          ||===>cameras.bin
+||          ||===>imageMatchMatrix.txt
+||          ||===>images.bin
+||          ||===>imagesNames.txt
+||          ||===>points3D.bin
+=>17
+||===>images
+||    ||===>1DJI_0023.JPG
+||    ||===>1DJI_0024.JPG
+||    ||===>......
+||===>sparse
+||    ||===>0
+||          ||===>cameras.bin
+||          ||===>imageMatchMatrix.txt
+||          ||===>images.bin
+||          ||===>imagesNames.txt
+||          ||===>points3D.bin       
+=>18
+||  ......
+=>19
+||  ......
+=>20
+||  ......
+=>21
+||  ......
+
+......
 
 ## BibTeX
 ```
