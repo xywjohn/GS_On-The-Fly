@@ -104,6 +104,8 @@ python ContinuosProgressiveTrain.py --Source_Path_Dir .../On-The-Fly/data1 --Mod
   Training iterations for final refinement phase.
   #### --ProgressiveModelOutput
   Save gaussians before a new image is acquired.
+  
+</details>
 
 ## BibTeX
 ```
