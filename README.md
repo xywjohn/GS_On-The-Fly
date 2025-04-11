@@ -16,28 +16,28 @@ You can use your own data or the test data provided by us (located in /demo_data
 Dataset  
 =>16  
 ||===>images  
-||    ||===>1DJI_0024.JPG  
-||    ||===>1DJI_0025.JPG  
-||    ||===>......  
+||===||===>1DJI_0024.JPG  
+||===||===>1DJI_0025.JPG  
+||===||===>......  
 ||===>sparse  
-||    ||===>0  
-||          ||===>cameras.bin  
-||          ||===>imageMatchMatrix.txt  
-||          ||===>images.bin  
-||          ||===>imagesNames.txt  
-||          ||===>points3D.bin  
+||===||===>0  
+||=========||===>cameras.bin  
+||=========||===>imageMatchMatrix.txt  
+||=========||===>images.bin  
+||=========||===>imagesNames.txt  
+||=========||===>points3D.bin  
 =>17  
 ||===>images  
-||    ||===>1DJI_0023.JPG  
-||    ||===>1DJI_0024.JPG  
-||    ||===>......  
+||===||===>1DJI_0023.JPG  
+||===||===>1DJI_0024.JPG  
+||===||===>......  
 ||===>sparse  
-||    ||===>0  
-||          ||===>cameras.bin  
-||          ||===>imageMatchMatrix.txt  
-||          ||===>images.bin  
-||          ||===>imagesNames.txt  
-||          ||===>points3D.bin  
+||===||===>0   
+||=========||===>cameras.bin  
+||=========||===>imageMatchMatrix.txt  
+||=========||===>images.bin  
+||=========||===>imagesNames.txt  
+||=========||===>points3D.bin  
 =>18  
 ||  ......  
 =>19  
