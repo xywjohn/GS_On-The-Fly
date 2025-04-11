@@ -4,7 +4,7 @@ Yiwei Xu, Yifei Yu, Wentian Gan, Tengfei Wang, Zongqian Zhan, Hao Cheng and Xin 
 [![arxiv](https://img.shields.io/badge/arxiv-2406.15643-red)](https://arxiv.org/abs/2503.13086)
 [![webpage](https://img.shields.io/badge/webpage-green)](https://xywjohn.github.io/GS_On-the-Fly.github.io/)
 
-![image](2.jpg)
+![image](2.png)
 
 ## Cloning the Repository
 
