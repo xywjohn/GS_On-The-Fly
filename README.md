@@ -4,10 +4,6 @@ Yiwei Xu, Yifei Yu, Wentian Gan, Tengfei Wang, Zongqian Zhan, Hao Cheng and Xin 
 [![arxiv](https://img.shields.io/badge/arxiv-2406.15643-red)](https://arxiv.org/abs/2503.13086)
 [![webpage](https://img.shields.io/badge/webpage-green)](https://xywjohn.github.io/GS_On-the-Fly.github.io/)
 
-<p align="center">
-    <img src="Final_Demo.mp4" width="700px"/>
-</p>
-
 ## Cloning the Repository
 
 ```shell
@@ -42,6 +38,8 @@ On_The_Fly_Dataset = r"On-The-Fly/data1" # where you save On-The-Fly SfM Results
 ```
 
 This will produce results as illustrated below:
+
+*****************************************
 
 Dataset  
 =>16  
@@ -78,6 +76,8 @@ Dataset
 ||  ......  
 
 ......
+
+*****************************************
 
 ## 3DGS Train
 
