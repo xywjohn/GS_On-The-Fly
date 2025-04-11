@@ -57,6 +57,20 @@ Dataset
 
 ......
 
+## Cloning the Repository
+
+```shell
+# SSH
+git clone git@github.com:xywjohn/GS_On-The-Fly.git --recursive
+```
+or
+```shell
+# HTTPS
+git clone https://github.com/xywjohn/GS_On-The-Fly --recursive
+```
+
+After that, please manually decompress the diff-gaussian-rasterization.zip archive located under the submodules directory.
+
 
 
 ## BibTeX
