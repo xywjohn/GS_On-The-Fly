@@ -168,6 +168,7 @@ class GaussianModel:
         grads[grads.isnan()] = 0.0
         self.tmp_radii = radii
 
+        '''
         # 在进行本次的密度控制之前，根据每一张影像以及其周围影像已经进行过多少次训练来判断，处于该影像范围内的椭球还需不需要处理
         # 对于不需要处理的椭球，将其对应的grads也直接置为0，这样在后面的复制和分裂时，该椭球就不会被选为处理目标
         IM = [int(name) for name in os.listdir(args.Source_Path_Dir) if os.path.isdir(os.path.join(args.Source_Path_Dir, name))]
@@ -179,7 +180,8 @@ class GaussianModel:
                           args.FinalOptimizationIterations
 
         # 平均来说每一张影像应该是多少次，即便在渐进式中，影像先进来的训练的次数更多
-        MeanWholeIerationsPerImage = int(WholeIterations / IM[-2])
+        # MeanWholeIerationsPerImage = int(WholeIterations / IM[-2])'''
+        MeanWholeIerationsPerImage = 195
 
         GetNewGrads = torch.zeros_like(grads, dtype=torch.bool)
         for i in range(len(ALL_viewpoint_stack)):
@@ -262,9 +264,8 @@ class GaussianModel:
                                                     lr_delay_mult=training_args.position_lr_delay_mult,
                                                     max_steps=training_args.position_lr_max_steps)
 
-    # 根据影像训练的次数决定学习率
-    def UpdateDifferentImageLearningRate(self, viewpoint_cam, ImagesAlreadyBeTrainedIterations, args,
-                                         ALL_viewpoint_stack, ImageMatchMatrix):
+    # 根据影像已训练的次数决定学习率
+    def UpdateDifferentImageLearningRate(self, viewpoint_cam, ImagesAlreadyBeTrainedIterations, args, ALL_viewpoint_stack, ImageMatchMatrix):
         IM = [int(name) for name in os.listdir(args.Source_Path_Dir) if
               os.path.isdir(os.path.join(args.Source_Path_Dir, name))]
         IM = sorted(IM)
@@ -312,6 +313,102 @@ class GaussianModel:
                 param_group['lr'] = viewpoint_cam_Lr
 
         return viewpoint_cam_Lr
+
+    # 根据影像已训练的次数来决定学习率（更新版）
+    def On_The_Fly_Update_Lr(self, ALL_viewpoint_stack, ImagesAlreadyBeTrainedIterations, args, viewpoint_cam, ImageMatchMatrix):
+        MeanWholeIerationsPerImage = 195
+
+        # 计算每一张影像单独来看此时应该是什么学习率
+        New_Lr = []
+        viewpoint_cam_Index = -1
+        for i in range(len(ALL_viewpoint_stack)):
+            cam = ALL_viewpoint_stack[i]
+            delay_rate = 1.0
+            if (ImagesAlreadyBeTrainedIterations[cam.image_name] >= MeanWholeIerationsPerImage):
+                t = 1.0
+            else:
+                t = np.clip(ImagesAlreadyBeTrainedIterations[cam.image_name] / MeanWholeIerationsPerImage, 0, 1)
+            log_lerp = np.exp(np.log(args.position_lr_init * self.spatial_lr_scale) * (1 - t) + np.log(
+                args.position_lr_final * self.spatial_lr_scale) * t)
+            log_lerp = delay_rate * log_lerp
+            New_Lr.append(log_lerp)
+
+            if viewpoint_cam.image_name == cam.image_name:
+                viewpoint_cam_Index = i
+
+        # 根据viewpoint_cam自己的训练次数以及所有和其有重叠关系的影像的训练次数，来决定viewpoint_cam此时的学习率
+        viewpoint_cam_Lr = 0
+        RelatedImagesNum = 0
+        for j in range(len(ImageMatchMatrix[viewpoint_cam_Index])):
+            if ImageMatchMatrix[viewpoint_cam_Index][j] != 0:
+                viewpoint_cam_Lr = viewpoint_cam_Lr + ImageMatchMatrix[viewpoint_cam_Index][j] * New_Lr[j]
+                RelatedImagesNum = RelatedImagesNum + 1
+
+        # 由于在匹配矩阵中，自己和自己的关系其实也是0，所以还要加上自己的学习率，之后取平均
+        viewpoint_cam_Lr = (viewpoint_cam_Lr + New_Lr[viewpoint_cam_Index]) / (RelatedImagesNum + 1)
+
+        # 更新优化器中的参数
+        for param_group in self.optimizer.param_groups:
+            if param_group["name"] == "xyz":
+                param_group['lr'] = viewpoint_cam_Lr
+
+        return viewpoint_cam_Lr
+
+    # 根据影像已训练的次数来决定是否需要进行密度控制（更新版）
+    def On_The_Fly_Densify_and_Prune(self, max_grad, min_opacity, extent, max_screen_size, radii, MaxWeightsImages, Image_Visibility, ImagesAlreadyBeTrainedIterations, ALL_viewpoint_stack, ImageMatchMatrix):
+        grads = self.xyz_gradient_accum / self.denom
+        grads[grads.isnan()] = 0.0
+        self.tmp_radii = radii
+        MeanWholeIerationsPerImage = 195
+
+        # 生成一个掩膜，初始全部为True
+        GetNewGrads = torch.ones_like(grads, dtype=torch.bool)
+
+        # 为每一张影像计算一个等效学习次数，这将由该影像以及其周边影像所决定
+        EqualTrainingTimes = {}
+        for i in range(len(ALL_viewpoint_stack)):
+            for j in range(len(ALL_viewpoint_stack)):
+                if ImageMatchMatrix[i][j] != 0:
+                    if ALL_viewpoint_stack[i].image_name not in EqualTrainingTimes.keys():
+                        EqualTrainingTimes[ALL_viewpoint_stack[i].image_name] = [ImageMatchMatrix[i][j] * ImagesAlreadyBeTrainedIterations[ALL_viewpoint_stack[j].image_name] + ImagesAlreadyBeTrainedIterations[ALL_viewpoint_stack[i].image_name], 2]
+                    else:
+                        EqualTrainingTimes[ALL_viewpoint_stack[i].image_name][0] += ImageMatchMatrix[i][j] * ImagesAlreadyBeTrainedIterations[ALL_viewpoint_stack[j].image_name]
+                        EqualTrainingTimes[ALL_viewpoint_stack[i].image_name][1] += 1
+
+        # 只有训练次数较少的影像对应的高斯球才设置为True，其余的为False
+        for imagename in list(EqualTrainingTimes.keys()):
+            if EqualTrainingTimes[imagename][0] / EqualTrainingTimes[imagename][1] > MeanWholeIerationsPerImage / 2 and imagename in list(Image_Visibility.keys()):
+                GetNewGrads[Image_Visibility[imagename]] = False
+
+        # 将权值最大的10张影像对应的高斯球设置为True
+        for i in range(len(MaxWeightsImages)):
+            GetNewGrads[Image_Visibility[MaxWeightsImages[i].image_name]] = True
+
+        # 此时掩膜中为True的代表该高斯球不需要分裂
+        NotGetNewGrads = ~GetNewGrads
+
+        # 将不需要分裂的球的梯度值直接设置为0.0，这样他们就不会分裂了
+        grads[NotGetNewGrads] = 0.0
+        GradsNotZero = grads > 0.0
+
+        # 如果存在需要分裂的球
+        if GradsNotZero.sum().item() > 0:
+            self.densify_and_clone(grads, max_grad, extent)
+            self.densify_and_split(grads, max_grad, extent)
+
+            prune_mask = (self.get_opacity < min_opacity).squeeze()
+            if max_screen_size:
+                big_points_vs = self.max_radii2D > max_screen_size
+                big_points_ws = self.get_scaling.max(dim=1).values > 0.1 * extent
+                prune_mask = torch.logical_or(torch.logical_or(prune_mask, big_points_vs), big_points_ws)
+            self.prune_points(prune_mask)
+
+            tmp_radii = self.tmp_radii
+            self.tmp_radii = None
+        else:
+            tmp_radii = self.tmp_radii
+            self.tmp_radii = None
+            print("No Gaussians will be Cloned or Split!!")
 
     def setup_functions(self):
         def build_covariance_from_scaling_rotation(scaling, scaling_modifier, rotation):
@@ -443,6 +540,47 @@ class GaussianModel:
         self._rotation = nn.Parameter(rots.requires_grad_(True))
         self._opacity = nn.Parameter(opacities.requires_grad_(True))
         self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
+
+    def expand_from_pcd(self, pcd : BasicPointCloud, spatial_lr_scale : float, mask=None):
+        self.spatial_lr_scale = spatial_lr_scale
+        fused_point_cloud = torch.tensor(np.asarray(pcd.points)).float().cuda()
+        fused_color = RGB2SH(torch.tensor(np.asarray(pcd.colors)).float().cuda())
+        features = torch.zeros((fused_color.shape[0], 3, (self.max_sh_degree + 1) ** 2)).float().cuda()
+        features[:, :3, 0] = fused_color
+        features[:, 3:, 1:] = 0.0
+
+        dist2 = torch.clamp_min(distCUDA2(torch.from_numpy(np.asarray(pcd.points)).float().cuda()), 0.0000001)
+        scales = torch.log(torch.sqrt(dist2))[..., None].repeat(1, 3)
+        rots = torch.zeros((fused_point_cloud.shape[0], 4), device="cuda")
+        rots[:, 0] = 1
+
+        opacities = self.inverse_opacity_activation(0.1 * torch.ones((fused_point_cloud.shape[0], 1), dtype=torch.float, device="cuda"))
+
+        if mask is not None:
+            fused_point_cloud = fused_point_cloud[mask]
+            features = features[mask]
+            scales = scales[mask]
+            rots = rots[mask]
+            opacities = opacities[mask]
+
+        new_xyz = nn.Parameter(fused_point_cloud.requires_grad_(True))
+        new_features_dc = nn.Parameter(features[:, :, 0:1].transpose(1, 2).contiguous().requires_grad_(True))
+        new_features_rest = nn.Parameter(features[:, :, 1:].transpose(1, 2).contiguous().requires_grad_(True))
+        new_scaling = nn.Parameter(scales.requires_grad_(True))
+        new_rotation = nn.Parameter(rots.requires_grad_(True))
+        new_opacity = nn.Parameter(opacities.requires_grad_(True))
+
+        self.densification_postfix(
+            new_xyz,
+            new_features_dc,
+            new_features_rest,
+            new_opacity,
+            new_scaling,
+            new_rotation,
+            None
+        )
+
+
 
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
