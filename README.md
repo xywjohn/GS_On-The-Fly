@@ -9,9 +9,17 @@ Yiwei Xu, Yifei Yu, Wentian Gan, Tengfei Wang, Zongqian Zhan, Hao Cheng and Xin 
 </p>
 
 ## Data Preparation
-Since this project aims to enable simultaneous image acquisition and 3D Gaussian Splatting (3DGS) training, we need to utilize the [![webpage]On-The-Fly SfM](https://github.com/RayShark0605/On_the_fly_SfM) system proposed by Zhan et al. This system has already achieved the capability of near real-time image acquisition and camera pose estimation. In this project, we will leverage the camera poses and sparse point clouds provided by this system as the input for subsequent 3DGS training.
+Since this project aims to enable simultaneous image acquisition and 3D Gaussian Splatting (3DGS) training, we need to utilize the [On-The-Fly SfM](https://github.com/RayShark0605/On_the_fly_SfM) system proposed by Zhan et al. This system has already achieved the capability of near real-time image acquisition and camera pose estimation. In this project, we will leverage the camera poses and sparse point clouds provided by this system as the input for subsequent 3DGS training.
 
-You can use your own data or the test data provided by us (located in /demo_data/images) to perform processing with the On-The-Fly SfM system. This will produce results as illustrated below:
+You can use your own data or the test data provided by us (/demo_data/images) to perform processing with the On-The-Fly SfM system. Next, please configure the parameters DatasetName, SourceImageDataset, and On_The_Fly_Dataset in the DatasetPrepare.py file to the corresponding dataset names or paths. For example, if you intend to use the dataset provided by us directly, please set them as follows:
+
+```shell
+DatasetName = ['WHU']
+SourceImageDataset = r"demo_data/data1"
+On_The_Fly_Dataset = r"On-The-Fly/data1" # where you save On-The-Fly SfM Results
+```
+
+This will produce results as illustrated below:
 
 Dataset  
 =>16  
@@ -48,6 +56,8 @@ Dataset
 ||  ......  
 
 ......
+
+
 
 ## BibTeX
 ```
