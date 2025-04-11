@@ -8,6 +8,28 @@ Yiwei Xu, Yifei Yu, Wentian Gan, Tengfei Wang, Zongqian Zhan, Hao Cheng and Xin 
     <img src="Final_Demo.mp4" width="700px"/>
 </p>
 
+## Cloning the Repository
+
+```shell
+# SSH
+git clone git@github.com:xywjohn/GS_On-The-Fly.git --recursive
+```
+or
+```shell
+# HTTPS
+git clone https://github.com/xywjohn/GS_On-The-Fly --recursive
+```
+
+After that, please manually decompress the diff-gaussian-rasterization.zip archive located under the submodules directory.
+
+## Setup
+
+```shell
+conda env create --file environment.yml
+conda activate On_The_Fly_GS
+cd .../GS_On-The-Fly
+```
+
 ## Data Preparation
 Since this project aims to enable simultaneous image acquisition and 3D Gaussian Splatting (3DGS) training, we need to utilize the [On-The-Fly SfM](https://github.com/RayShark0605/On_the_fly_SfM) system proposed by Zhan et al. This system has already achieved the capability of near real-time image acquisition and camera pose estimation. In this project, we will leverage the camera poses and sparse point clouds provided by this system as the input for subsequent 3DGS training.
 
@@ -56,28 +78,6 @@ Dataset
 ||  ......  
 
 ......
-
-## Cloning the Repository
-
-```shell
-# SSH
-git clone git@github.com:xywjohn/GS_On-The-Fly.git --recursive
-```
-or
-```shell
-# HTTPS
-git clone https://github.com/xywjohn/GS_On-The-Fly --recursive
-```
-
-After that, please manually decompress the diff-gaussian-rasterization.zip archive located under the submodules directory.
-
-## Setup
-
-```shell
-conda env create --file environment.yml
-conda activate On_The_Fly_GS
-cd .../GS_On-The-Fly
-```
 
 ## 3DGS Train
 
