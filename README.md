@@ -81,9 +81,29 @@ Dataset
 
 ## 3DGS Train
 
+```Source_Path_Dir``` should specify the directory that contains all image data, camera pose information, and sparse point cloud. ```Model_Path_Dir``` should specify the output directory for the 3DGS results. The output frequency of 3DGS can be configured by using different command-line arguments.
+
 ```shell
 python ContinuosProgressiveTrain.py --Source_Path_Dir .../On-The-Fly/data1 --Model_Path_Dir .../OutputDir --FinalOptimizationIterations 4000
 ```
+
+<details>
+<summary><span style="font-weight: bold;">Command Line Arguments for ContinuosProgressiveTrain.py</span></summary>
+
+  #### --Source_Path_Dir
+  Path to the source directory containing all image data, camera pose information, and sparse point cloud.
+  #### --Model_Path_Dir 
+  Path where the trained model should be stored.
+  #### --IterationFirstScene
+  Training iterations for initial training phase.
+  #### --IterationPerMergeScene
+  Training iterations for progressive training phase. This parameter is used to control the number of 3DGS training iterations to be performed each time a new image is acquired.
+  #### --MergeScene_Densification_Interval
+  This parameter is used to control how often Gaussian densification is performed during the progressive training phase, based on the number of 3DGS training iterations.
+  #### --FinalOptimizationIterations
+  Training iterations for final refinement phase.
+  #### --ProgressiveModelOutput
+  Save gaussians before a new image is acquired.
 
 ## BibTeX
 ```
