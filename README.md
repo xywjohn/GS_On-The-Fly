@@ -4,6 +4,8 @@ Yiwei Xu, Yifei Yu, Wentian Gan, Tengfei Wang, Zongqian Zhan, Hao Cheng and Xin 
 [![arxiv](https://img.shields.io/badge/arxiv-2406.15643-red)](https://arxiv.org/abs/2503.13086)
 [![webpage](https://img.shields.io/badge/webpage-green)](https://xywjohn.github.io/GS_On-the-Fly.github.io/)
 
+![image](2.jpg)
+
 ## Cloning the Repository
 
 ```shell
@@ -104,7 +106,7 @@ python ContinuosProgressiveTrain.py --Source_Path_Dir .../On-The-Fly/data1 --Mod
   Training iterations for final refinement phase.
   #### --ProgressiveModelOutput
   Save gaussians before a new image is acquired.
-  
+
 </details>
 
 ## BibTeX
