@@ -1,8 +1,57 @@
-# Gaussian On-The-Fly Splatting
-# A Progressive Framework for Robust Near Real-Time 3DGS Optimization
+# Gaussian On-The-Fly Splatting: A Progressive Framework for Robust Near Real-Time 3DGS Optimization
 Yiwei Xu, Yifei Yu, Wentian Gan, Tengfei Wang, Zongqian Zhan, Hao Cheng and Xin Wang
 
-**Abstract:** 3D Gaussian Splatting (3DGS) achieves high fidelity rendering with fast real-time performance, but existing methods rely on offline training after full Structure-from Motion (SfM) processing. In contrast, this work introduces On the-Fly GS, a progressive framework enabling near real-time 3DGS optimization during image capture. As each image arrives, its pose and sparse points are updated via on-the-fly SfM, and newly optimized Gaussians are immediately integrated into the 3DGS field. We propose a progressive local optimization strategy to prioritize new images and their neighbors by their corresponding overlapping relationship, allowing the new image and its overlapping images to get more training. To further stabilize training across old and new images, an adaptive learning rate schedule balances the iterations and the learning rate. Moreover, to maintain overall quality of the 3DGS field, an efficient global optimization scheme prevents overfitting to the newly added images. Experiments on multiple benchmark datasets show that our On-the-Fly GS reduces training time significantly, optimizing each new image in seconds with minimal rendering loss, offering the first practical step toward rapid, progressive 3DGS reconstruction.
+[![arxiv](https://img.shields.io/badge/arxiv-2406.15643-red)](https://arxiv.org/abs/2503.13086)
+[![webpage](https://img.shields.io/badge/webpage-green)](https://xywjohn.github.io/GS_On-the-Fly.github.io/)
+
+<p align="center">
+    <img src="Final_Demo.mp4" width="700px"/>
+</p>
+
+## Data Preparation
+Since this project aims to enable simultaneous image acquisition and 3D Gaussian Splatting (3DGS) training, we need to utilize the On-The-Fly Structure-from-Motion (SfM) system proposed by Zhan et al. This system has already achieved the capability of near real-time image acquisition and camera pose estimation. In this project, we will leverage the camera poses and sparse point clouds provided by this system as the input for subsequent 3DGS training.
+
+You can use your own data or the test data provided by us (located in /demo_data/images) to perform processing with the On-The-Fly SfM system. This will produce results as illustrated below:
+
+│  
+├─16
+│  ├─images
+│  │      1DJI_0024.JPG
+│  │      1DJI_0025.JPG
+│  │      ......
+│  │      
+│  └─sparse
+│      └─0
+│              cameras.bin
+│              imageMatchMatrix.txt
+│              images.bin
+│              imagesNames.txt
+│              points3D.bin
+│              points3D.ply
+│              
+├─17
+│  ├─images
+│  │      1DJI_0023.JPG
+│  │      1DJI_0024.JPG
+│  │      ......
+│  │      
+│  └─sparse
+│      └─0
+│              cameras.bin
+│              imageMatchMatrix.txt
+│              images.bin
+│              imagesNames.txt
+│              points3D.bin
+│              points3D.ply
+│              
+├─18
+│  ......
+├─19
+│  ......
+├─20
+│  ......
+├─21
+│  ......
 
 ## BibTeX
 ```
@@ -16,6 +65,3 @@ Yiwei Xu, Yifei Yu, Wentian Gan, Tengfei Wang, Zongqian Zhan, Hao Cheng and Xin 
       url={https://arxiv.org/abs/2503.13086}, 
 }
 ```
-
----
-
