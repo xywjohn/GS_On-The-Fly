@@ -3,6 +3,7 @@ import shutil
 from tqdm import tqdm
 from PIL import Image
 import glob
+import os
 
 def copy_images(src_path, dst_path):
     shutil.copy2(src_path, dst_path)
@@ -18,9 +19,11 @@ def resize_image_pil(image_path, new_width=1600):
         return img, False
 
 DatasetName = ['WHU']
+SourceImageDataset = r"/SourceImageDataset"
+On_The_Fly_Dataset = r"/On_The_Fly_Dataset"
 
 for dataset in DatasetName:
-    SourceImagesDir = r"D:\研究生\3DGS\Dataset\COLMAP\WHU\images".format(dataset)
+    SourceImagesDir = os.path.join(SourceImageDataset, r"{}/images".format(dataset))
     jpg_files = glob.glob(os.path.join(SourceImagesDir, "*.JPG"))
     endimage = jpg_files[0].split(".")[-1]
     progress_bar = tqdm(range(0, len(jpg_files)), desc="Resize progress {}".format(dataset))
@@ -32,7 +35,7 @@ for dataset in DatasetName:
         progress_bar.update(1)
     progress_bar.close()
 
-    MainDir = r"D:\研究生\3DGS\Dataset\On-the-Fly\WHU_Small".format(dataset)
+    MainDir = os.path.join(On_The_Fly_Dataset, dataset)
 
     if IsResize:
         OriginSourceImagesDir = SourceImagesDir
