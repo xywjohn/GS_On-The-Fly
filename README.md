@@ -34,7 +34,7 @@ Since this project aims to enable simultaneous image acquisition and 3D Gaussian
 You can use your own data or the test data provided by us (/demo_data/images) to perform processing with the On-The-Fly SfM system. Next, please configure the parameters DatasetName, SourceImageDataset, and On_The_Fly_Dataset in the DatasetPrepare.py file to the corresponding dataset names or paths. For example, if you intend to use the dataset provided by us directly, please set them as follows:
 
 ```shell
-DatasetName = ['WHU']
+DatasetName = ['SRSX']
 SourceImageDataset = r"demo_data/data1"
 On_The_Fly_Dataset = r"On-The-Fly/data1" # where you save On-The-Fly SfM Results
 ```
@@ -86,7 +86,7 @@ Dataset
 ```Source_Path_Dir``` should specify the directory that contains all image data, camera pose information, and sparse point cloud. ```Model_Path_Dir``` should specify the output directory for the 3DGS results. The output frequency of 3DGS can be configured by using different command-line arguments.
 
 ```shell
-python ContinuosProgressiveTrain.py --Source_Path_Dir .../On-The-Fly/data1 --Model_Path_Dir .../OutputDir --FinalOptimizationIterations 4000
+python ContinuosProgressiveTrain.py --Source_Path_Dir .../On-The-Fly/data1/SRSX --Model_Path_Dir .../OutputDir --FinalOptimizationIterations 4000
 ```
 
 <details>
