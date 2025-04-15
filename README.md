@@ -31,23 +31,23 @@ cd .../GS_On-The-Fly
 ## Data Preparation
 Since this project aims to enable simultaneous image acquisition and 3D Gaussian Splatting (3DGS) training, we need to utilize the [On-The-Fly SfM](https://github.com/RayShark0605/On_the_fly_SfM) system proposed by Zhan et al. This system has already achieved the capability of near real-time image acquisition and camera pose estimation. In this project, we will leverage the camera poses and sparse point clouds provided by this system as the input for subsequent 3DGS training.
 
-You can use your own data or the test data provided by us (/demo_data/images) to perform processing with the On-The-Fly SfM system. Next, please configure the parameters DatasetName, SourceImageDataset, and On_The_Fly_Dataset in the DatasetPrepare.py file to the corresponding dataset names or paths. For example, if you intend to use the dataset provided by us directly, please set them as follows:
+You can use your own data or the test data provided by us (demo_data/data1 and On-The-Fly/data1) to perform processing with the On-The-Fly SfM system. You can download our data [here](https://drive.google.com/drive/folders/1X3KiQR_bva6nUXQEznZqgHbkam91kCVB?usp=drive_link) and place all the data into the folder with the same name in this project directory. Next, please configure the parameters DatasetName, SourceImageDataset, and On_The_Fly_Dataset in the DatasetPrepare.py file to the corresponding dataset names or paths. For example, if you intend to use the dataset provided by us directly, please set them as follows:
 
 ```shell
-DatasetName = ['SRSX']
-SourceImageDataset = r"demo_data/data1"
-On_The_Fly_Dataset = r"On-The-Fly/data1" # where you save On-The-Fly SfM Results
+DatasetName = ['data1']
+SourceImageDataset = r".../demo_data"
+On_The_Fly_Dataset = r".../On-The-Fly" # where you save On-The-Fly SfM Results
 ```
 
 This will produce results as illustrated below:
 
 *****************************************
 
-Dataset  
+On-The-Fly/data1  
 =>16  
 ||===>images  
-||===||===>1DJI_0024.JPG  
-||===||===>1DJI_0025.JPG  
+||===||===>10002.jpg  
+||===||===>10005.jpg  
 ||===||===>......  
 ||===>sparse  
 ||===||===>0  
@@ -58,8 +58,8 @@ Dataset
 ||=========||===>points3D.bin  
 =>17  
 ||===>images  
-||===||===>1DJI_0023.JPG  
-||===||===>1DJI_0024.JPG  
+||===||===>10002.jpg  
+||===||===>10005.jpg  
 ||===||===>......  
 ||===>sparse  
 ||===||===>0   
@@ -86,7 +86,7 @@ Dataset
 ```Source_Path_Dir``` should specify the directory that contains all image data, camera pose information, and sparse point cloud. ```Model_Path_Dir``` should specify the output directory for the 3DGS results. The output frequency of 3DGS can be configured by using different command-line arguments.
 
 ```shell
-python ContinuosProgressiveTrain.py --Source_Path_Dir .../On-The-Fly/data1/SRSX --Model_Path_Dir .../OutputDir --FinalOptimizationIterations 4000
+python ContinuosProgressiveTrain.py --Source_Path_Dir .../On-The-Fly/data1 --Model_Path_Dir .../OutputDir --FinalOptimizationIterations 4000
 ```
 
 <details>
