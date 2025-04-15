@@ -43,7 +43,7 @@ This will produce results as illustrated below:
 
 *****************************************
 
-On-The-Fly/data1  
+.../On-The-Fly/data1  
 =>16  
 ||===>images  
 ||===||===>10002.jpg  
