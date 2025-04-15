@@ -18,13 +18,13 @@ def resize_image_pil(image_path, new_width=1600):
     else:
         return img, False
 
-DatasetName = ['WHU']
-SourceImageDataset = r"/SourceImageDataset"
-On_The_Fly_Dataset = r"/On_The_Fly_Dataset"
+DatasetName = ["data1"]
+SourceImageDataset = r".../demo_data"
+On_The_Fly_Dataset = r".../On-The-Fly" # where you save On-The-Fly SfM Results
 
 for dataset in DatasetName:
     SourceImagesDir = os.path.join(SourceImageDataset, r"{}/images".format(dataset))
-    jpg_files = glob.glob(os.path.join(SourceImagesDir, "*.JPG"))
+    jpg_files = glob.glob(os.path.join(SourceImagesDir, "*.jpg"))
     endimage = jpg_files[0].split(".")[-1]
     progress_bar = tqdm(range(0, len(jpg_files)), desc="Resize progress {}".format(dataset))
     for jpg in jpg_files:
@@ -37,7 +37,7 @@ for dataset in DatasetName:
 
     MainDir = os.path.join(On_The_Fly_Dataset, dataset)
 
-    if IsResize:
+    if IsResize and False:
         OriginSourceImagesDir = SourceImagesDir
         SourceImagesDir = SourceImagesDir + "_Resize"
 
