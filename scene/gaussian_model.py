@@ -315,9 +315,7 @@ class GaussianModel:
         return viewpoint_cam_Lr
 
     # 根据影像已训练的次数来决定学习率（更新版）
-    def On_The_Fly_Update_Lr(self, ALL_viewpoint_stack, ImagesAlreadyBeTrainedIterations, args, viewpoint_cam, ImageMatchMatrix):
-        MeanWholeIerationsPerImage = 195
-
+    def On_The_Fly_Update_Lr(self, ALL_viewpoint_stack, ImagesAlreadyBeTrainedIterations, args, viewpoint_cam, ImageMatchMatrix, MeanWholeIerationsPerImage = 195):
         # 计算每一张影像单独来看此时应该是什么学习率
         New_Lr = []
         viewpoint_cam_Index = -1
@@ -345,7 +343,10 @@ class GaussianModel:
                 RelatedImagesNum = RelatedImagesNum + 1
 
         # 由于在匹配矩阵中，自己和自己的关系其实也是0，所以还要加上自己的学习率，之后取平均
-        viewpoint_cam_Lr = (viewpoint_cam_Lr + New_Lr[viewpoint_cam_Index]) / (RelatedImagesNum + 1)
+        if ImageMatchMatrix[viewpoint_cam_Index][viewpoint_cam_Index] == 0:
+            viewpoint_cam_Lr = (viewpoint_cam_Lr + New_Lr[viewpoint_cam_Index]) / (RelatedImagesNum + 1)
+        else:
+            viewpoint_cam_Lr = viewpoint_cam_Lr / RelatedImagesNum
 
         # 更新优化器中的参数
         for param_group in self.optimizer.param_groups:
@@ -355,11 +356,10 @@ class GaussianModel:
         return viewpoint_cam_Lr
 
     # 根据影像已训练的次数来决定是否需要进行密度控制（更新版）
-    def On_The_Fly_Densify_and_Prune(self, max_grad, min_opacity, extent, max_screen_size, radii, MaxWeightsImages, Image_Visibility, ImagesAlreadyBeTrainedIterations, ALL_viewpoint_stack, ImageMatchMatrix):
+    def On_The_Fly_Densify_and_Prune(self, max_grad, min_opacity, extent, max_screen_size, radii, MaxWeightsImages, Image_Visibility, ImagesAlreadyBeTrainedIterations, ALL_viewpoint_stack, ImageMatchMatrix, MeanWholeIerationsPerImage=195):
         grads = self.xyz_gradient_accum / self.denom
         grads[grads.isnan()] = 0.0
         self.tmp_radii = radii
-        MeanWholeIerationsPerImage = 195
 
         # 生成一个掩膜，初始全部为True
         GetNewGrads = torch.ones_like(grads, dtype=torch.bool)
@@ -370,14 +370,17 @@ class GaussianModel:
             for j in range(len(ALL_viewpoint_stack)):
                 if ImageMatchMatrix[i][j] != 0:
                     if ALL_viewpoint_stack[i].image_name not in EqualTrainingTimes.keys():
-                        EqualTrainingTimes[ALL_viewpoint_stack[i].image_name] = [ImageMatchMatrix[i][j] * ImagesAlreadyBeTrainedIterations[ALL_viewpoint_stack[j].image_name] + ImagesAlreadyBeTrainedIterations[ALL_viewpoint_stack[i].image_name], 2]
+                        EqualTrainingTimes[ALL_viewpoint_stack[i].image_name] = [ImageMatchMatrix[i][j] * ImagesAlreadyBeTrainedIterations[ALL_viewpoint_stack[j].image_name], 1]
+                        if ImageMatchMatrix[i][i] == 0:
+                            EqualTrainingTimes[ALL_viewpoint_stack[i].image_name][0] += ImagesAlreadyBeTrainedIterations[ALL_viewpoint_stack[i].image_name]
+                            EqualTrainingTimes[ALL_viewpoint_stack[i].image_name][1] += 1
                     else:
                         EqualTrainingTimes[ALL_viewpoint_stack[i].image_name][0] += ImageMatchMatrix[i][j] * ImagesAlreadyBeTrainedIterations[ALL_viewpoint_stack[j].image_name]
                         EqualTrainingTimes[ALL_viewpoint_stack[i].image_name][1] += 1
 
         # 只有训练次数较少的影像对应的高斯球才设置为True，其余的为False
         for imagename in list(EqualTrainingTimes.keys()):
-            if EqualTrainingTimes[imagename][0] / EqualTrainingTimes[imagename][1] > MeanWholeIerationsPerImage / 2 and imagename in list(Image_Visibility.keys()):
+            if (EqualTrainingTimes[imagename][0] / EqualTrainingTimes[imagename][1] > MeanWholeIerationsPerImage / 2) and imagename in list(Image_Visibility.keys()):
                 GetNewGrads[Image_Visibility[imagename]] = False
 
         # 将权值最大的10张影像对应的高斯球设置为True
