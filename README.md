@@ -42,6 +42,12 @@ SourceImageDataset = r".../demo_data"
 On_The_Fly_Dataset = r".../On-The-Fly" # where you save On-The-Fly SfM Results
 ```
 
+And then you have to run ```DatasetPrepare.py```:
+
+```shell
+python DatasetPrepare.py
+```
+
 This will produce results as illustrated below:
 
 *****************************************
