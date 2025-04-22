@@ -135,6 +135,8 @@ class OptimizationParams(ParamGroup):
         self.ResetOpacityUntilIter = 300000
         self.RenderAllImagesInterval = 5000
         self.InitialTrainingEvaluateInterval = 500
+        self.spatial_lr_scale = 0.0
+        self.Mean = 195
         super().__init__(parser, "Optimization Parameters")
 
 def get_combined_args(parser : ArgumentParser):
