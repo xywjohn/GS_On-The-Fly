@@ -26,6 +26,9 @@ After that, please manually decompress the diff-gaussian-rasterization.zip archi
 conda env create --file environment.yml
 conda activate On_The_Fly_GS
 cd .../GS_On-The-Fly
+
+pip install pytorch3d
+pip install open3d
 ```
 
 ## Data Preparation
