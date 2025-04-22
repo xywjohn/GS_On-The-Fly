@@ -98,6 +98,7 @@ def TrainingPreparation(args):
     os.makedirs(args.Model_Path_Dir, exist_ok=True)
     Diary = open(os.path.join(args.Model_Path_Dir, "Diary.txt"), "w")
     EvaluateDiary = open(os.path.join(args.Model_Path_Dir, "EvaluateDiary.txt"), "w")
+    GaussianDiary = open(os.path.join(args.Model_Path_Dir, "GaussianDiary.txt"), "w")
 
     # 这个字典用于存储每一张影像已经被训练了多少次
     ImagesAlreadyBeTrainedIterations = {}
@@ -116,8 +117,22 @@ def TrainingPreparation(args):
     Diary.write(f"Progress: {IM}\n")
     Diary.write("\n")
 
-    Diary.write(f"OpacityThreshold: {args.opacity_threshold}, InitialTrainingTimesSetZero: {args.InitialTrainingTimesSetZero}, UseDifferentImageLr: {args.DifferentImagesLr}, UseDepthLoss: {args.UseDepthLoss}, UseScaleLoss: {args.UseScaleLoss}, UseNormalLoss: {args.GetNormal}\n")
-    print(f"OpacityThreshold: {args.opacity_threshold}, InitialTrainingTimesSetZero: {args.InitialTrainingTimesSetZero}, UseDifferentImageLr: {args.DifferentImagesLr}, UseDepthLoss: {args.UseDepthLoss}, UseScaleLoss: {args.UseScaleLoss}, UseNormalLoss: {args.GetNormal}")
+    Diary.write(f"Mean: {args.Mean}, "
+                f"MergeScene_Densification_Interval: {args.MergeScene_Densification_Interval}, "
+                f"OpacityThreshold: {args.opacity_threshold}, "
+                f"InitialTrainingTimesSetZero: {args.InitialTrainingTimesSetZero}, "
+                f"UseDifferentImageLr: {args.DifferentImagesLr}, "
+                f"UseDepthLoss: {args.UseDepthLoss}, "
+                f"UseScaleLoss: {args.UseScaleLoss}, "
+                f"UseNormalLoss: {args.GetNormal}\n")
+    print(f"Mean: {args.Mean}, "
+          f"MergeScene_Densification_Interval: {args.MergeScene_Densification_Interval}, "
+          f"OpacityThreshold: {args.opacity_threshold}, "
+          f"InitialTrainingTimesSetZero: {args.InitialTrainingTimesSetZero}, "
+          f"UseDifferentImageLr: {args.DifferentImagesLr}, "
+          f"UseDepthLoss: {args.UseDepthLoss}, "
+          f"UseScaleLoss: {args.UseScaleLoss}, "
+          f"UseNormalLoss: {args.GetNormal}")
 
     # 如果使用原本的学习率更新方法，则重新设置position_lr_max_step
     if not args.DifferentImagesLr:
@@ -126,7 +141,7 @@ def TrainingPreparation(args):
                           args.FinalOptimizationIterations
         args.position_lr_max_steps = WholeIterations
 
-    return TimeCost, Diary, EvaluateDiary, ImagesAlreadyBeTrainedIterations, source_path_list, model_path_list, IM
+    return TimeCost, Diary, EvaluateDiary, GaussianDiary, ImagesAlreadyBeTrainedIterations, source_path_list, model_path_list, IM
 
 def RecordTime(TimeCost, TimeClass, TimeCosumption):
     if TimeClass in TimeCost.keys():
@@ -147,7 +162,7 @@ class Gaussian_On_The_Fly_Splatting:
         self.args, self.lp, self.op, self.pp = GetArgs()
 
         # 训练开始前的准备工作
-        self.TimeCost, self.Diary, self.EvaluateDiary, self.ImagesAlreadyBeTrainedIterations, self.source_path_list, self.model_path_list, self.IM = TrainingPreparation(self.args)
+        self.TimeCost, self.Diary, self.EvaluateDiary, self.GaussianDiary, self.ImagesAlreadyBeTrainedIterations, self.source_path_list, self.model_path_list, self.IM = TrainingPreparation(self.args)
 
         # 记录完成准备工作所消耗的时间
         self.TimeCost = RecordTime(self.TimeCost, 'PreProcess', time.time() - self.TrainStartTime)
@@ -288,7 +303,7 @@ class Gaussian_On_The_Fly_Splatting:
                     # 如果是模型初始化训练，那么需要先将初始模型就已存在的影像的已训练次数置为0
                     if Training_Type == "Initialization" and len(list(self.ImagesAlreadyBeTrainedIterations.keys())) == 0:
                         for _ in range(len(viewpoint_stack)):
-                            self.ImagesAlreadyBeTrainedIterations[viewpoint_stack[_].image_name] = 0
+                            self.ImagesAlreadyBeTrainedIterations[viewpoint_stack[_].image_name] = int(self.args.Mean * self.args.IterationFirstScene / 30000)
                 else:
                     # 在渐进式训练过程中，将根据特殊规则选取用于训练的影像
                     viewpoint_stack = self.GetTraining_Viewpoints()
@@ -298,12 +313,13 @@ class Gaussian_On_The_Fly_Splatting:
 
             # 学习率下降
             if Training_Type != "On_The_Fly":
-                self.gaussians.update_learning_rate(self.AlreadyTrainingIterations)
+                lr = self.gaussians.update_learning_rate(self.AlreadyTrainingIterations)
             else:
-                self.gaussians.On_The_Fly_Update_Lr(self.scene.getTrainCameras().copy(),
+                lr = self.gaussians.On_The_Fly_Update_Lr(self.scene.getTrainCameras().copy(),
                                                     self.ImagesAlreadyBeTrainedIterations,
                                                     self.args, viewpoint_cam,
-                                                    self.ImageMatchingMatrix)
+                                                    self.ImageMatchingMatrix,
+                                                    self.args.Mean)
 
             # 将球谐函数的阶数提高一阶，最多至3阶
             if self.AlreadyTrainingIterations % 1000 == 0:
@@ -340,9 +356,6 @@ class Gaussian_On_The_Fly_Splatting:
                 load_loss = load_loss / math.pow(10, loss_adj + 1.0)
 
                 loss = loss * (1 - self.args.lambda_load) + self.args.lambda_load * load_loss
-
-                # 完成这一次训练后，让当前训练影像的已训练次数+1
-                self.ImagesAlreadyBeTrainedIterations[viewpoint_cam.image_name] = self.ImagesAlreadyBeTrainedIterations[viewpoint_cam.image_name] + 1
             # 目前暂时采用与其他情况相同的训练策略
             else:
                 # 进行影像渲染，渲染指定视点的影像
@@ -375,8 +388,16 @@ class Gaussian_On_The_Fly_Splatting:
 
                 loss = loss * (1 - self.args.lambda_load) + self.args.lambda_load * load_loss
 
-                # 完成这一次训练后，让当前训练影像的已训练次数+1
+            # 完成这一次训练后，让当前训练影像的已训练次数+1
+            if Training_Type != "Initialization":
                 self.ImagesAlreadyBeTrainedIterations[viewpoint_cam.image_name] = self.ImagesAlreadyBeTrainedIterations[viewpoint_cam.image_name] + 1
+
+            self.GaussianDiary.write(f"Iteration: {self.AlreadyTrainingIterations}, "
+                                     f"Image Name: {viewpoint_cam.image_name}, "
+                                     f"Image Training Times: {self.ImagesAlreadyBeTrainedIterations[viewpoint_cam.image_name]}, "
+                                     f"Lr: {lr}, "
+                                     f"spatial_lr_scale: {self.scene.cameras_extent}, "
+                                     f"Gaussians: {visibility_filter.shape[0]}\n")
 
             # 反向传播
             loss.backward()
@@ -420,7 +441,8 @@ class Gaussian_On_The_Fly_Splatting:
                                                                     self.Image_Visibility,
                                                                     self.ImagesAlreadyBeTrainedIterations,
                                                                     self.scene.getTrainCameras().copy(),
-                                                                    self.ImageMatchingMatrix)
+                                                                    self.ImageMatchingMatrix,
+                                                                    self.args.Mean)
                         GaussianPruned = True
                 elif Training_Type == "Final_Refinement" and self.AlreadyTrainingIterations <= Start_From_Its + iteration / 2:
                     self.gaussians.max_radii2D[visibility_filter] = torch.max(self.gaussians.max_radii2D[visibility_filter], radii[visibility_filter])
@@ -539,7 +561,8 @@ class Gaussian_On_The_Fly_Splatting:
 
                 gt_image = viewpoint_cam.original_image.cuda()
                 PSNR = psnr(image, gt_image)
-                ALL_Image_PSNR.append(PSNR.cpu().sum().item() / 3)
+                PSNR = PSNR.cpu().sum().item() / 3
+                ALL_Image_PSNR.append(PSNR)
 
                 PSNR_File.write(str(self.AlreadyTrainingIterations) + f": {PSNR}, Visible_Gaussians_Num: {visibility_filter.shape[0]}\n")
                 PSNR_File.close()
@@ -575,10 +598,13 @@ class Gaussian_On_The_Fly_Splatting:
             json.dump(json_cams, file)
 
         # 将包裹所有相机的球的半径赋值给self.cameras_extent（相机分布范围）
-        self.scene.cameras_extent = scene_info.nerf_normalization["radius"]
+        if self.args.spatial_lr_scale == 0.0:
+            self.scene.cameras_extent = scene_info.nerf_normalization["radius"]
+        else:
+            self.scene.cameras_extent = self.args.spatial_lr_scale
 
         # 将新加入的影像读入到系统之中
-        self.AddNewImages(scene_info)
+        NewCams = self.AddNewImages(scene_info)
 
         # 确定稀疏点云中哪一些点是新增加的
         points1 = self.scene.basic_pcd.points
@@ -608,6 +634,33 @@ class Gaussian_On_The_Fly_Splatting:
 
         # 更新模型输出位置
         self.scene.model_path = self.args.model_path_second
+
+        return NewCams
+
+    # 当一张新的影像被加入时，需要计算该影像此时的等效学习次数
+    def ImagesAlreadyBeTrainedIterations_Set(self, NewCams):
+        resolution_scale = 1.0
+        ALL_viewpoint_stack = self.scene.train_cameras[resolution_scale]
+        for NewCam in NewCams:
+            if self.args.InitialTrainingTimesSetZero:
+                Equivalent_training_times = 0
+            else:
+                viewpoint_cam_Index = -1
+                for j in range(len(ALL_viewpoint_stack)):
+                    if NewCam.image_name == ALL_viewpoint_stack[j].image_name:
+                        viewpoint_cam_Index = j
+                Equivalent_training_times = 0
+                RelatedImagesNum = 0
+                for j in range(len(self.ImageMatchingMatrix[viewpoint_cam_Index])):
+                    if self.ImageMatchingMatrix[viewpoint_cam_Index][j] != 0 and ALL_viewpoint_stack[j].image_name in self.ImagesAlreadyBeTrainedIterations.keys():
+                        Equivalent_training_times = Equivalent_training_times + self.ImageMatchingMatrix[viewpoint_cam_Index][j] * self.ImagesAlreadyBeTrainedIterations[ALL_viewpoint_stack[j].image_name]
+                        RelatedImagesNum = RelatedImagesNum + 1
+                Equivalent_training_times = Equivalent_training_times / RelatedImagesNum
+                Equivalent_training_times = int(Equivalent_training_times)
+
+            # 将新加入影像的已训练次数设置为0
+            self.ImagesAlreadyBeTrainedIterations[NewCam.image_name] = Equivalent_training_times
+            print(f"{NewCam.image_name}: Equavelent Training Times = {Equivalent_training_times}")
 
     # 读入新的影像数据并更新所有已有影像的位姿信息
     def AddNewImages(self, scene_info):
@@ -688,9 +741,6 @@ class Gaussian_On_The_Fly_Splatting:
                 self.scene.train_cameras[resolution_scale].append(NewCam)
                 NewCams.append(NewCam)
 
-                # 将新加入影像的已训练次数设置为0
-                self.ImagesAlreadyBeTrainedIterations[NewCam.image_name] = 0
-
             self.scene.scene_info_traincam = scene_info.train_cameras
 
             return NewCams
@@ -730,19 +780,22 @@ class Gaussian_On_The_Fly_Splatting:
             image_tensor = transform_to_tensor(gray_image).tolist()
         elif (MatrixPath.split(".")[-1] == "txt"):
             MatrixFile = open(MatrixPath)
-            MaxNum = 0
+            MaxNum = []
             for i in range(len(viewpoint_stack)):
                 tempstr = MatrixFile.readline().split(",")
                 MatrixLine = []
                 for j in range(len(tempstr)):
                     MatrixLine.append(int(tempstr[j]))
-                if (MaxNum < max(MatrixLine)):
-                    MaxNum = max(MatrixLine)
+                MaxNum.append(max(MatrixLine))
                 image_tensor[0].append(MatrixLine)
 
+            MatchingMatrixTXT = open(os.path.join(self.args.model_path_second, "MatchingMatrixTXT1.txt"), "w")
             for i in range(len(viewpoint_stack)):
                 for j in range(len(viewpoint_stack)):
-                    image_tensor[0][i][j] = math.log(image_tensor[0][i][j] + 1) / math.log(MaxNum + 1)
+                    image_tensor[0][i][j] = math.log(image_tensor[0][i][j] + 1) / math.log(MaxNum[i] + 1)
+                    MatchingMatrixTXT.write(str(round(image_tensor[0][i][j], 2)) + " ")
+                MatchingMatrixTXT.write('\n')
+            MatchingMatrixTXT.close()
 
         # 获取匹配矩阵中每一行对应的影像名称
         ImagesNameFile = open(ImagesNamePath)
@@ -758,9 +811,13 @@ class Gaussian_On_The_Fly_Splatting:
             img_name = viewpoint_stack[i].image_name
             Indexes.append(ImagesNames.index(img_name))
 
+        MatchingMatrixTXT = open(os.path.join(self.args.model_path_second, "MatchingMatrixTXT2.txt"), "w")
         for i in range(len(viewpoint_stack)):
             for j in range(len(viewpoint_stack)):
                 Matrix[i][j] = image_tensor[0][Indexes[i]][Indexes[j]]
+                MatchingMatrixTXT.write(str(round(Matrix[i][j], 2)) + " ")
+            MatchingMatrixTXT.write('\n')
+        MatchingMatrixTXT.close()
 
         # 返回结果
         return Matrix
@@ -844,7 +901,7 @@ class Gaussian_On_The_Fly_Splatting:
             self.Diary.write("\n**************Model Optimized From {} to {}**************\n".format(self.args.source_path.split('/')[-1], self.args.source_path_second.split('/')[-1]))
 
             # 根据新的稀疏点云来扩张高斯点云
-            self.ExpandingGS_From_SparsePCD()
+            NewCams = self.ExpandingGS_From_SparsePCD()
 
             # 读入影像匹配矩阵
             self.ImageMatchingMatrix = self.GetImageMatchingMatrix()
@@ -852,11 +909,15 @@ class Gaussian_On_The_Fly_Splatting:
             # 根据影像匹配矩阵来计算影像的权值
             self.Images_Weights = self.GetImagesWeightsFromMatrix()
 
+            # 为新加入的影像设置一个已训练次数，可以是0也可以是通过其他方法计算得到的值
+            self.ImagesAlreadyBeTrainedIterations_Set(NewCams)
+
             # 对扩张后的场景进行训练
             self.Train_Gaussians((self.args.IterationPerMergeScene + self.args.GlobalOptimizationIteration) * self.NewImagesNum, "On_The_Fly")
 
             # 如果需要，输出一次高斯模型
-            self.GS_Save()
+            if self.args.ProgressiveModelOutput:
+                self.GS_Save()
 
     # 模型最终优化
     def Final_Refinement(self):
@@ -868,20 +929,27 @@ class Gaussian_On_The_Fly_Splatting:
         self.args.model_path = self.model_path_list[-2]
         self.args.source_path_second = self.source_path_list[-1]
         self.args.model_path_second = self.model_path_list[-1]
+        self.scene.model_path = self.args.model_path_second
         prepare_output_and_logger(self.args, True)
 
         self.Train_Gaussians(self.args.FinalOptimizationIterations, "Final_Refinement")
 
         self.Render_Evaluate_All_Images()
 
+        self.Diary.close()
+        self.EvaluateDiary.close()
+        self.GaussianDiary.close()
+
+        self.GS_Save()
+
     # 保存当前模型
     def GS_Save(self, UseSecondPath=True):
-        print("\n[ITER {}] Saving Checkpoint".format(self.GS_Save_Times))
+        print("\n[Save Times {}] Saving Checkpoint".format(self.GS_Save_Times))
         if not UseSecondPath:
             torch.save((self.gaussians.capture(), self.GS_Save_Times), self.args.model_path + "/chkpnt" + str(self.GS_Save_Times) + ".pth")
         else:
             torch.save((self.gaussians.capture(), self.GS_Save_Times), self.args.model_path_second + "/chkpnt" + str(self.GS_Save_Times) + ".pth")
-        print("\n[ITER {}] Saving Gaussians".format(self.GS_Save_Times))
+        print("\n[Save Times {}] Saving Gaussians".format(self.GS_Save_Times))
         self.scene.save(self.GS_Save_Times)
 
         self.GS_Save_Times += 1
@@ -895,6 +963,3 @@ if __name__ == "__main__":
 
     # 模型最终优化
     GS_Model.Final_Refinement()
-
-    # 保存模型
-    GS_Model.GS_Save()
