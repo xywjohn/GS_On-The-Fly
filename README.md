@@ -6,6 +6,10 @@ Yiwei Xu, Yifei Yu, Wentian Gan, Tengfei Wang, Zongqian Zhan, Hao Cheng and Xin 
 
 ![image](2.png)
 
+## Our new work for near real-time 3DGS training and TDOM generation!!!
+
+We now introduce a new method, A-TDOM, which achieves faster 3DGS training and already supports TDOM generation based on the 3DGS field. If you are interested, [click here](https://github.com/xywjohn/A-TDOM).
+
 ## Cloning the Repository
 
 ```shell
